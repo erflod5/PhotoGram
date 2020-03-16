@@ -1,0 +1,28 @@
+{
+  "name": "Semi1_Practica1",
+  "version": "1.0.0",
+  "description": "* Luis Angel Vargas Leon\r * Erik Gerardo Flores Diaz",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "dev" : "nodemon --watch src src/index.js"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/erflod5/Semi1_Practica1.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/erflod5/Semi1_Practica1/issues"
+  },
+  "homepage": "https://github.com/erflod5/Semi1_Practica1#readme",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.2"
+  }
+}
