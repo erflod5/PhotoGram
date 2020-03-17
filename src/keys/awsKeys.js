@@ -8,8 +8,8 @@ let aws_keys = {
     dynamodb: {
         apiVersion: '2012-08-10',
         region: 'us-east-2',
-        accessKeyId: "",
-        secretAccessKey: ""
+        accessKeyId: "AKIAYZJK4JNQHXCM3MER",
+        secretAccessKey: "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" 
     },
     rekognition: {
         accessKeyId: "",

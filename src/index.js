@@ -26,13 +26,14 @@ app.post('/api/upload',(req,res)=>{
     let body = req.body;
 
     if(body.base64){
-        let base64 = body.base64;
+        let base64 = body.base64.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/)[2];
         let extension = body.extension;
-        let name = body.name;
-    
+        let username = body.username;
+        let password = body.password;
+
         //Decoded Image
         let decodedImage = Buffer.from(base64,'base64');
-        let filename = `${name}-${uuid()}.${extension}`;
+        let filename = `${username}-${uuid()}.${extension}`;
     
         //S3 params
         let bucketname = 'bucketfotosg5';
@@ -51,12 +52,47 @@ app.post('/api/upload',(req,res)=>{
               } 
             else {
                 console.log('Upload success at:', data.Location);
-                res.send({ 'message': 'uploaded' })
+                dynDb.putItem({
+                    TableName : "uPhotos",
+                    Item : {
+                        "username" : {S: username},
+                        "password" : {S: password},
+                        "profileImg" : {S: data.Location}
+                    }
+                }, (err,data2)=>{
+                    if(err){
+                        console.log('Error saving data:', err);
+                        res.send({ 'message': 'ddb failed' });
+                    }
+                    else{
+                        console.log('Save success:', data2);
+                        res.send({ username : username, src : data.Location });
+                    }
+                });
             }    
         });
     }
     else {
-
+        let username = body.username;
+        let password = body.password;
+        console.log(username);
+        console.log(password);
+        dynDb.putItem({
+            TableName : "uPhotos",
+            Item : {
+                "username" : {S: username},
+                "password" : {S: password}
+            }
+        }, (err,data)=>{
+            if(err){
+                console.log('Error saving data:', err);
+                res.send({ 'message': 'ddb failed' });
+            }
+            else{
+                console.log('Save success:', data);
+                res.send({ 'message': 'ddb success' });
+            }
+        });
     }
 });
 
