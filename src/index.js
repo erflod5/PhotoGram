@@ -25,34 +25,39 @@ const dynDb = new AWS.DynamoDB(aws_keys.dynamodb);
 app.post('/api/upload',(req,res)=>{
     let body = req.body;
 
-    let base64 = body.base64;
-    let extension = body.extension;
-    let name = body.name;
+    if(body.base64){
+        let base64 = body.base64;
+        let extension = body.extension;
+        let name = body.name;
+    
+        //Decoded Image
+        let decodedImage = Buffer.from(base64,'base64');
+        let filename = `${name}-${uuid()}.${extension}`;
+    
+        //S3 params
+        let bucketname = 'bucketfotosg5';
+        let folder = 'usuarios/';
+        let filepath = `${folder}${filename}`;
+        var uploadParamsS3 = {
+            Bucket: bucketname,
+            Key: filepath,
+            Body: decodedImage,
+            ACL: 'public-read',
+        };
+        s3.upload(uploadParamsS3, function sync(err,data){
+            if (err) {
+                console.log('Error uploading file:', err);
+                res.send({ 'message': 'failed' })
+              } 
+            else {
+                console.log('Upload success at:', data.Location);
+                res.send({ 'message': 'uploaded' })
+            }    
+        });
+    }
+    else {
 
-    //Decoded Image
-    let decodedImage = Buffer.from(base64,'base64');
-    let filename = `${name}-${uuid()}.${extension}`;
-
-    //S3 params
-    let bucketname = 'bucketfotosg5';
-    let folder = 'usuarios/';
-    let filepath = `${folder}${filename}`;
-    var uploadParamsS3 = {
-        Bucket: bucketname,
-        Key: filepath,
-        Body: decodedImage,
-        ACL: 'public-read',
-    };
-    s3.upload(uploadParamsS3, function sync(err,data){
-        if (err) {
-            console.log('Error uploading file:', err);
-            res.send({ 'message': 'failed' })
-          } 
-        else {
-            console.log('Upload success at:', data.Location);
-            res.send({ 'message': 'uploaded' })
-        }    
-    });
+    }
 });
 
 app.post('/api/signin',(req,res)=>{
