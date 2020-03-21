@@ -257,7 +257,7 @@ app.post(`/api/iniciarSesion`, (req, response) => {
                 //comparar con imagen.
                 if (data.Items[i].profileImg == null) {
                     console.log('Es null: ' + data.Items[i].username);
-                    return;
+                    continue;
                 }
                 const imagen = data.Items[i].profileImg.S.replace('https://bucketfotosg5.s3.us-east-2.amazonaws.com/', '');
                 var params = {
@@ -284,6 +284,19 @@ app.post(`/api/iniciarSesion`, (req, response) => {
                         username: data.Items[i].username,
                         src: data.Items[i].profileImg.S
                     }
+
+                    s3.upload({
+                        Bucket: 'bucketfotosg5',
+                        Key: `capturas/${data.Items[i].username.S}-${uuid()}.jpg`,
+                        Body: buffer,
+                        ACL: 'public-read',
+                    },(err,data)=>{
+                        if(err)
+                            console.log(err);
+                        else
+                            console.log(data);
+                    });
+
                     console.log(respuesta);
                     response.json(respuesta);
                     return;
