@@ -209,9 +209,7 @@ app.post('/api/upload', (req, res) => {
     });
 });
 
-
 //COMPARACION DE FOTO DE PERFIL PARA EL LOGIN.
-
 app.get(`/api/getUsers`, (request, response) => {
 
 
@@ -336,12 +334,6 @@ app.post(`/api/login`, (req, response) => {
         }
     });
 });
-
-
-
-
-
-
 
 app.listen(app.get('port'), () => {
     console.log("Servidor corriendo en el puerto " + app.get('port'));
