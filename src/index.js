@@ -49,7 +49,7 @@ app.post('/api/signin', (req, res) => {
         s3.upload(uploadParamsS3, function sync(err, data) {
             if (err) {
                 console.log('Error uploading file:', err);
-                res.send({ status : false })
+                res.send({ status: false })
             }
             else {
                 console.log('Upload success at:', data.Location);
@@ -61,11 +61,11 @@ app.post('/api/signin', (req, res) => {
                         "profileImg": { S: data.Location },
                         "pictures": { L: [] }
                     },
-                    ConditionExpression : 'attribute_not_exists(username)'
+                    ConditionExpression: 'attribute_not_exists(username)'
                 }, (err, data2) => {
                     if (err) {
                         console.log('Error saving data:', err);
-                        res.send({ status : false});
+                        res.send({ status: false });
                     }
                     else {
                         console.log('Save success:', data2);
@@ -85,13 +85,14 @@ app.post('/api/signin', (req, res) => {
             Item: {
                 "username": { S: username },
                 "password": { S: password },
-                "pictures": { L: [] }
+                "pictures": { L: [] },
+                "src": { S: "" }
             },
-            ConditionExpression : 'attribute_not_exists(username)'
+            ConditionExpression: 'attribute_not_exists(username)'
         }, (err, data) => {
             if (err) {
                 console.log('Error saving data:', err);
-                res.send({ status : false });
+                res.send({ status: false });
             }
             else {
                 console.log('Save success:', data);
@@ -138,17 +139,17 @@ app.post('/api/upload', (req, res) => {
             MaxLabels: 10
         }
         var paramsCompare = {
-            SimilarityThreshold : 80,
-            TargetImage : {
+            SimilarityThreshold: 80,
+            TargetImage: {
                 S3Object: {
                     Bucket: bucketname,
-                    Name : filepath
+                    Name: filepath
                 }
             },
-            SourceImage : {
-                S3Object : {
+            SourceImage: {
+                S3Object: {
                     Bucket: bucketname,
-                    Name : 'usuarios/' + body.profile
+                    Name: 'usuarios/' + body.profile
                 }
             }
         };
@@ -156,21 +157,21 @@ app.post('/api/upload', (req, res) => {
             if (err) {
                 console.log('Error: ' + err);
             }
-            rekognition.compareFaces(paramsCompare, function(err, response) {
+            rekognition.compareFaces(paramsCompare, function (err, response) {
                 var aparece = false;
                 if (err) {
                     console.log(err);
                 }
                 else {
                     response.FaceMatches.forEach(data => {
-                        let position   = data.Face.BoundingBox
+                        let position = data.Face.BoundingBox
                         let similarity = data.Similarity
                         console.log(`The face at: ${position.Left}, ${position.Top} matches with ${similarity} % confidence`);
-                        if(similarity > 90)
+                        if (similarity > 90)
                             aparece = true;
                     });
                 }
-                
+
                 dynDb.updateItem({
                     TableName: "uPhotos",
                     Key: { "username": { S: username } },
@@ -186,14 +187,14 @@ app.post('/api/upload', (req, res) => {
                                     {
                                         "src": { "S": data.Location },
                                         "tag": { "S": dataRek.Labels[0].Name },
-                                        "itsme" : {"BOOL" : aparece}
+                                        "itsme": { "BOOL": aparece }
                                     }
                                 }
                             ]
                         }
                     },
                     ReturnValues: "UPDATED_NEW"
-                    }, (err, data) => {
+                }, (err, data) => {
                     if (err) {
                         console.log('Error saving data:', err);
                         res.send({ 'message': 'ddb failed' });
@@ -207,6 +208,140 @@ app.post('/api/upload', (req, res) => {
         });
     });
 });
+
+
+//COMPARACION DE FOTO DE PERFIL PARA EL LOGIN.
+
+app.get(`/api/getUsers`, (request, response) => {
+
+
+    let params = {
+        TableName: "uPhotos",
+    };
+
+    dynDb.scan(params, function (err, data) {
+        if (err) {
+            console.log("Error", err);
+        } else {
+            //console.log("Success", data.Items);
+            data.Items.forEach(function (element, index, array) {
+                console.log(element);
+            });
+
+        }
+
+        response.json(data);
+    });
+
+});
+
+app.post(`/api/iniciarSesion`, (req, response) => {
+    let params = {
+        TableName: "uPhotos",
+    };
+
+    let body = req.body;
+    const similarity = 90;//porcentaje de similitud
+    const source = body.sourceBase64; //dirección relativa de la imagen origen (captura)
+    const buffer = new Buffer.from(source, 'base64');
+
+    dynDb.scan(params, async function (err, data) {
+        if (err) {
+            console.log("Error", err);
+        } else {
+            var respuesta = {
+                statusCode: 200,
+                estado: false
+            }
+            //console.log('Aqui voy');
+            for (let i = 0; i < data.Items.length; i++) {
+                console.log(i + ', ' + data.Items[i].username.S);
+                //comparar con imagen.
+                if (data.Items[i].profileImg == null) {
+                    console.log('Es null: ' + data.Items[i].username);
+                    return;
+                }
+                const imagen = data.Items[i].profileImg.S.replace('https://bucketfotosg5.s3.us-east-2.amazonaws.com/', '');
+                var params = {
+                    SimilarityThreshold: similarity,
+                    SourceImage: {
+                        Bytes: buffer
+                    },
+                    TargetImage: {
+                        S3Object:
+                        {
+                            Bucket: "bucketfotosg5",
+                            Name: imagen
+                        }
+                    }
+                }
+                const datos = await rekognition.compareFaces(params).promise();
+
+                if (datos.FaceMatches.length > 0) {
+                    respuesta = {
+                        statusCode: 200,
+                        similutud: JSON.stringify(datos.FaceMatches[0].Similarity),
+                        body: JSON.stringify({ "message": datos }),
+                        estado: true,
+                        username: data.Items[i].username,
+                        src: data.Items[i].profileImg.S
+                    }
+                    console.log(respuesta);
+                    response.json(respuesta);
+                    return;
+                }
+                console.log('Imagen: ' + imagen);
+                // });
+                //console.log(element);
+            }
+            console.log(respuesta);
+            response.json(respuesta);
+            return;
+        }
+    });
+});
+
+app.post(`/api/login`, (req, response) => {
+    let params = {
+        TableName: "uPhotos",
+    };
+
+    let body = req.body;
+
+    dynDb.scan(params, async function (err, data) {
+        if (err) {
+            console.log("Error", err);
+        } else {
+            var respuesta = {
+                statusCode: 200,
+                estado: false
+            }
+            for (const element of data.Items) {
+                if(element.username.S == body.username){
+                    if(element.password.S == body.password){ //Ingreso correcto
+                        respuesta = {
+                            statusCode: 200,
+                            estado: true,
+                            username: element.username.S,
+                            src: element.profileImg.S
+                        }
+                        response.json(respuesta);
+                        return;
+                    }
+                }
+            }
+            console.log(respuesta);
+            response.json(respuesta);
+            return;
+        }
+    });
+});
+
+
+
+
+
+
 
 app.listen(app.get('port'), () => {
     console.log("Servidor corriendo en el puerto " + app.get('port'));
