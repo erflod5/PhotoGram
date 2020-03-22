@@ -78,15 +78,14 @@ app.post('/api/signin', (req, res) => {
     else {
         let username = body.username;
         let password = body.password;
-        console.log(username);
-        console.log(password);
+        console.log(body);
         dynDb.putItem({
             TableName: "uPhotos",
             Item: {
                 "username": { S: username },
                 "password": { S: password },
-                "pictures": { L: [] },
-                "profileImg": { S: "" }
+           
+		"pictures": { L: [] }
             },
             ConditionExpression: 'attribute_not_exists(username)'
         }, (err, data) => {
