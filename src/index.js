@@ -333,7 +333,7 @@ app.post(`/api/login`, (req, response) => {
                             statusCode: 200,
                             estado: true,
                             username: element.username.S,
-                            src: element.profileImg.S
+                            src: element.profileImg == null || undefined ? "" : element.profileImg.S
                         }
                         response.json(respuesta);
                         return;
