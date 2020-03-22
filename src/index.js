@@ -14,8 +14,8 @@ app.set('port', process.env.PORT || 3000);
 app.use(cors());
 
 //Midlewares
-app.use(express.json({ limit: '5mb' }));
-app.use(express.urlencoded({ limit: '5mb', extended: false }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ limit: '50mb', extended: false }));
 
 //AWS
 const s3 = new AWS.S3(aws_keys.s3);
@@ -86,7 +86,7 @@ app.post('/api/signin', (req, res) => {
                 "username": { S: username },
                 "password": { S: password },
                 "pictures": { L: [] },
-                "src": { S: "" }
+                "profileImg": { S: "" }
             },
             ConditionExpression: 'attribute_not_exists(username)'
         }, (err, data) => {
